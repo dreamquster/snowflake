@@ -15,19 +15,26 @@ public class SnowflakeApplication {
 	@Value("${zookeeperUrl}")
 	private String zookeeperUrl;
 
+	@Value("${base-dir}")
+	private String baseDir;
+
 	@Bean
 	public CuratorFramework curatorFrameworkClient() {
 		RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-		return CuratorFrameworkFactory.builder()
+		CuratorFramework client = CuratorFrameworkFactory.builder()
 					.connectString(zookeeperUrl)
 					.sessionTimeoutMs(5000)
 					.connectionTimeoutMs(5000)
 					.retryPolicy(retryPolicy)
+					.namespace(baseDir)
 					.build();
+		client.start();
+		return client;
 
 	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(SnowflakeApplication.class, args);
+
 	}
 }

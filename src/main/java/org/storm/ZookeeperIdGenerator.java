@@ -1,6 +1,9 @@
 package org.storm;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by fm.chen on 2017/11/28.
  */
 @Service
-public class ZookeeperIdGenerator implements IdGenerator {
+public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
 
     @Autowired
@@ -31,12 +34,16 @@ public class ZookeeperIdGenerator implements IdGenerator {
 
     @Override
     public Long nextId() {
+
         return snowflakeId(workId, seqGen.getAndIncrement());
     }
 
 
 
-    public Integer getWorkId() {
+    public Integer getWorkId() throws Exception {
+        Stat stat = new Stat();
+        zkClient.getData().storingStatIn(stat).forPath(PATH);
+        stat.getMzxid();
         return workId;
     }
 
@@ -67,5 +74,16 @@ public class ZookeeperIdGenerator implements IdGenerator {
         workId = workId<<WORK_BITS;
         stamp = stamp | workId | seq;
         return stamp;
+    }
+
+    private static final String PATH = "id_generator";
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        zkClient.checkExists().forPath(PATH);
+        Long registerTime = System.currentTimeMillis();
+        zkClient.create()
+                .creatingParentContainersIfNeeded()
+                .forPath(PATH, new byte[]{registerTime.byteValue()});
     }
 }
