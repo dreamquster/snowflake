@@ -3,8 +3,10 @@ package org.storm;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,9 +17,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private CuratorFramework zkClient;
+
+    @Value("${data-dir}")
+    private String dataDir;
+
+    private String prevNodePath;
 
     private Integer workId;
 
@@ -40,10 +48,15 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
 
 
-    public Integer getWorkId() throws Exception {
+    public Integer getWorkId()  {
         Stat stat = new Stat();
-        zkClient.getData().storingStatIn(stat).forPath(PATH);
-        stat.getMzxid();
+        try {
+            zkClient.getData().storingStatIn(stat).forPath(PATH_PREFIX);
+            stat.getMzxid();
+        } catch (Exception e) {
+            logger.error("", e);
+        }
+
         return workId;
     }
 
@@ -76,14 +89,49 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         return stamp;
     }
 
-    private static final String PATH = "id_generator";
+    private static final String PATH_PREFIX = "/id_generator/worker-";
+
+    private boolean isExistWorkNode() {
+        if (null == prevNodePath) {
+            return false;
+        }
+
+        Stat stat = null;
+        try {
+            stat = zkClient.checkExists().forPath(prevNodePath);
+            if (stat == null) {
+                return false;
+            }
+        } catch (Exception e) {
+            logger.error("", e);
+            return false;
+        }
+
+
+        return true;
+    }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        zkClient.checkExists().forPath(PATH);
+        if (!isExistWorkNode()) {
+            createWorkNode();
+        }
+
+        extractWorkId();
+
+    }
+
+    private void createWorkNode() throws Exception {
         Long registerTime = System.currentTimeMillis();
-        zkClient.create()
+        prevNodePath = zkClient.create()
                 .creatingParentContainersIfNeeded()
-                .forPath(PATH, new byte[]{registerTime.byteValue()});
+                .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                .forPath(PATH_PREFIX, new byte[]{registerTime.byteValue()});
+    }
+
+    private void extractWorkId() {
+        int sepIdx = prevNodePath.indexOf("-");
+        workId = Integer.parseInt(prevNodePath.substring(sepIdx + 1));
+        logger.info("workId:{} with path:{}", workId, prevNodePath);
     }
 }

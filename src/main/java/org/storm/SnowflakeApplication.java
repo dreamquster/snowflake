@@ -7,9 +7,12 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.PropertySource;
 
 @SpringBootApplication
+@PropertySource("file:${app.home}/app.properties")
 public class SnowflakeApplication {
 
 	@Value("${zookeeperUrl}")
@@ -17,6 +20,8 @@ public class SnowflakeApplication {
 
 	@Value("${base-dir}")
 	private String baseDir;
+
+
 
 	@Bean
 	public CuratorFramework curatorFrameworkClient() {
@@ -34,7 +39,8 @@ public class SnowflakeApplication {
 	}
 
 	public static void main(String[] args) {
-		SpringApplication.run(SnowflakeApplication.class, args);
-
+		ApplicationContext context = SpringApplication.run(SnowflakeApplication.class, args);
+		ZookeeperIdGenerator generator = context.getBean(ZookeeperIdGenerator.class);
+		Integer workId = generator.getWorkId();
 	}
 }
