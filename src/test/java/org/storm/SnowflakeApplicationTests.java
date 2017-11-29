@@ -16,7 +16,7 @@ public class SnowflakeApplicationTests {
 
 	@Test
 	public void contextLoads() {
-		Long id = zookeeperIdGenerator.snowflakeId(32, 32);
+		Assert.assertEquals(zookeeperIdGenerator.getWorkId(), (Integer)5);
 
 
 	}

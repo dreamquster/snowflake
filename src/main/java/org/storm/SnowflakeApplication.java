@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 
 @SpringBootApplication
-@PropertySource("file:${app.home}/app.properties")
+@PropertySource("file:${data-dir}/app.properties")
 public class SnowflakeApplication {
 
 	@Value("${zookeeperUrl}")

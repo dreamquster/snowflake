@@ -25,9 +25,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
     @Autowired
     private CuratorFramework zkClient;
 
-    @Value("${data-dir}")
-    private String dataDir;
-
+    @Value("${prevNodePath:#{null}}")
     private String prevNodePath;
 
     private Integer workId;
@@ -52,14 +50,6 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
 
     public Integer getWorkId()  {
-        Stat stat = new Stat();
-        try {
-            zkClient.getData().storingStatIn(stat).forPath(PATH_PREFIX);
-            stat.getMzxid();
-        } catch (Exception e) {
-            logger.error("", e);
-        }
-
         return workId;
     }
 
@@ -135,7 +125,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         prevNodePath = zkClient.create()
                 .creatingParentContainersIfNeeded()
                 .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
-                .forPath(PATH_PREFIX, ByteUtils.longToBytes(registerTime.byteValue()));
+                .forPath(PATH_PREFIX, ByteUtils.longToBytes(registerTime));
     }
 
     private void extractWorkId() {
