@@ -8,7 +8,10 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.storm.utils.ByteUtils;
+import org.storm.utils.DateCompareUtils;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -78,6 +81,8 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
     private static final Integer WORK_SEQ_BITS = WORK_BITS + 10;
 
+    private static final Integer EXPIRE_SECONDS = 5;
+
     public Long snowflakeId(Integer workId, Integer seq) {
         if (UPPER_BOUND < workId || UPPER_BOUND < seq) {
             throw new IllegalArgumentException(String.format("workId or seq exceed the upper limit:%d", UPPER_BOUND));
@@ -116,9 +121,13 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         if (!isExistWorkNode()) {
             createWorkNode();
         }
+        Long registerTime = ByteUtils.bytesToLong(zkClient.getData().forPath(prevNodePath));
+        Long currTime = System.currentTimeMillis();
+        long diffSeconds = TimeUnit.SECONDS.convert(currTime - registerTime, TimeUnit.MILLISECONDS);
+        if (diffSeconds <= EXPIRE_SECONDS) {
 
+        }
         extractWorkId();
-
     }
 
     private void createWorkNode() throws Exception {
@@ -126,7 +135,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         prevNodePath = zkClient.create()
                 .creatingParentContainersIfNeeded()
                 .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
-                .forPath(PATH_PREFIX, new byte[]{registerTime.byteValue()});
+                .forPath(PATH_PREFIX, ByteUtils.longToBytes(registerTime.byteValue()));
     }
 
     private void extractWorkId() {
