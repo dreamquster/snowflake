@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option java_package = "org.storm.protobuf";
+
+service IdGeneratorService{
+    rpc getSystemInMillisOther(Empty) returns (SystemTimeResponse);
+}
+
+message Empty {
+}
+message SystemTimeResponse {
+    int64 time = 1;
+}
+

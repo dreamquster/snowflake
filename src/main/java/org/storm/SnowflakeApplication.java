@@ -39,6 +39,7 @@ public class SnowflakeApplication {
 	}
 
 	public static void main(String[] args) {
+
 		ApplicationContext context = SpringApplication.run(SnowflakeApplication.class, args);
 		ZookeeperIdGenerator generator = context.getBean(ZookeeperIdGenerator.class);
 		Integer workId = generator.getWorkId();

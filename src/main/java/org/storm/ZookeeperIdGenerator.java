@@ -6,10 +6,9 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.storm.configs.PropertiesFileService;
 import org.storm.utils.ByteUtils;
-import org.storm.utils.DateCompareUtils;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,12 +19,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
+    private static final String PREV_NODE_PATH = "prevNodePath";
+
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private CuratorFramework zkClient;
 
-    @Value("${prevNodePath:#{null}}")
+    @Autowired
+    private PropertiesFileService propertiesFileService;
+
     private String prevNodePath;
 
     private Integer workId;
@@ -65,7 +68,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         this.seqGen = seqGen;
     }
 
-    private static final Integer UPPER_BOUND = 0x3F; //111 1111 1111
+    private static final Integer UPPER_BOUND = 0x3F; //11 1111 1111
 
     private static final Integer WORK_BITS = 10;
 
@@ -108,16 +111,19 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        prevNodePath = propertiesFileService.getProperty(PREV_NODE_PATH);
         if (!isExistWorkNode()) {
             createWorkNode();
         }
+        propertiesFileService.saveSetProperty(PREV_NODE_PATH, prevNodePath);
         Long registerTime = ByteUtils.bytesToLong(zkClient.getData().forPath(prevNodePath));
         Long currTime = System.currentTimeMillis();
         long diffSeconds = TimeUnit.SECONDS.convert(currTime - registerTime, TimeUnit.MILLISECONDS);
         if (diffSeconds <= EXPIRE_SECONDS) {
 
         }
-        extractWorkId();
+        Integer workId = extractWorkId();
+
     }
 
     private void createWorkNode() throws Exception {
@@ -128,9 +134,10 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
                 .forPath(PATH_PREFIX, ByteUtils.longToBytes(registerTime));
     }
 
-    private void extractWorkId() {
+    private int extractWorkId() {
         int sepIdx = prevNodePath.indexOf("-");
         workId = Integer.parseInt(prevNodePath.substring(sepIdx + 1));
         logger.info("workId:{} with path:{}", workId, prevNodePath);
+        return workId;
     }
 }
