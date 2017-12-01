@@ -5,13 +5,16 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.storm.exceptions.RpcCloseException;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Created by fm.chen on 2017/12/1.
  */
-public class SnowflakeClient {
+public class SnowflakeClient implements Closeable {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -44,5 +47,14 @@ public class SnowflakeClient {
     public ListenableFuture<SystemTimeResponse> asyncPeerSystemInfo() {
         Empty empty = Empty.getDefaultInstance();
         return idGenFutureStub.getSystemInMillisOther(empty);
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            this.shutdown();
+        } catch (InterruptedException e) {
+            throw new RpcCloseException(e);
+        }
     }
 }
