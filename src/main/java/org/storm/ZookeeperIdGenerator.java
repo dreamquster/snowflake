@@ -170,6 +170,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
             }
         } catch (Exception e) {
             logger.error(String.format("get last updated time error for %d", workId), e);
+            return true;
         }
         return false;
     }
@@ -198,7 +199,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         registerIPPort();
         timer.scheduleAtFixedRate(periodUpdateTimeTask, new Date(), TimeUnit.SECONDS.toMillis(3));
         Integer workId = extractWorkId();
-        propertiesFileService.saveSetProperty(PREV_NODE_PATH, workId);
+        propertiesFileService.saveSetProperty(PREV_NODE_PATH, prevNodePath);
         snowflakeServer.start();
     }
 
@@ -220,6 +221,8 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
                 .creatingParentContainersIfNeeded()
                 .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
                 .forPath(PATH_PREFIX, ByteUtils.longToBytes(registerTime));
+        zkClient.create().forPath(prevNodePath + LAST_UPDATE_TIME,
+                ByteUtils.longToBytes(System.currentTimeMillis()));
     }
 
     private int extractWorkId() {

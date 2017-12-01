@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 
 @SpringBootApplication
-@PropertySource("file:${data-dir}/app.properties")
 public class SnowflakeApplication {
 
 	@Value("${zookeeperUrl}")
@@ -28,7 +27,6 @@ public class SnowflakeApplication {
 		RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
 		CuratorFramework client = CuratorFrameworkFactory.builder()
 					.connectString(zookeeperUrl)
-					.sessionTimeoutMs(5000)
 					.connectionTimeoutMs(5000)
 					.retryPolicy(retryPolicy)
 					.namespace(baseDir)
