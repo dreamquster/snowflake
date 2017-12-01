@@ -193,10 +193,10 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
             if (existTimeTurnBack()) {
                 throw new IllegalStateException("time of this machine is fall behind largely than others in cluster");
             }
-            registerIPPort();
-            timer.scheduleAtFixedRate(periodUpdateTimeTask, new Date(), TimeUnit.SECONDS.toMillis(3));
         }
 
+        registerIPPort();
+        timer.scheduleAtFixedRate(periodUpdateTimeTask, new Date(), TimeUnit.SECONDS.toMillis(3));
         Integer workId = extractWorkId();
         propertiesFileService.saveSetProperty(PREV_NODE_PATH, workId);
         snowflakeServer.start();
