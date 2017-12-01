@@ -16,8 +16,12 @@ import org.storm.protobuf.SystemTimeResponse;
 import org.storm.utils.ByteUtils;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +35,8 @@ import static java.lang.Math.abs;
 public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
     private static final String PREV_NODE_PATH = "prevNodePath";
+
+    private static final int THRESHOLD = 100; //ms
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -49,6 +55,8 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
     private AtomicInteger seqGen;
 
+    private Timer timer = new Timer();
+
     public ZookeeperIdGenerator() {
     }
 
@@ -60,7 +68,6 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
     @Override
     public Long nextId() {
-
         return snowflakeId(workId, seqGen.getAndIncrement());
     }
 
@@ -158,7 +165,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
             }
 
             long avgTime = sum.divide(BigDecimal.valueOf(count)).longValue();
-            if ((curTime + 5) <= avgTime) { // TimeUnit.MILLISECONDS.
+            if ((curTime + THRESHOLD) <= avgTime) { // TimeUnit.MILLISECONDS.
                 return true;
             }
         } catch (Exception e) {
@@ -182,18 +189,30 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         prevNodePath = propertiesFileService.getProperty(PREV_NODE_PATH);
         if (!isExistWorkNode()) {
             createWorkNode();
+        } else {
+            if (existTimeTurnBack()) {
+                throw new IllegalStateException("time of this machine is fall behind largely than others in cluster");
+            }
+            registerIPPort();
+            timer.scheduleAtFixedRate(periodUpdateTimeTask, new Date(), TimeUnit.SECONDS.toMillis(3));
         }
-        propertiesFileService.saveSetProperty(PREV_NODE_PATH, prevNodePath);
-        Long registerTime = ByteUtils.bytesToLong(zkClient.getData().forPath(prevNodePath));
-        Long currTime = System.currentTimeMillis();
-        long diffSeconds = TimeUnit.SECONDS.convert(currTime - registerTime, TimeUnit.MILLISECONDS);
-        if (diffSeconds <= EXPIRE_SECONDS) {
 
-        }
         Integer workId = extractWorkId();
 
         snowflakeServer.start();
     }
+
+    private TimerTask periodUpdateTimeTask =  new TimerTask() {
+        @Override
+        public void run() {
+            try {
+                zkClient.setData().forPath(prevNodePath + LAST_UPDATE_TIME,
+                        ByteUtils.longToBytes(System.currentTimeMillis()));
+            } catch (Exception e) {
+                logger.error("failed to periodically update time!", e);
+            }
+        }
+    };
 
     private void createWorkNode() throws Exception {
         Long registerTime = System.currentTimeMillis();
@@ -209,4 +228,14 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         logger.info("workId:{} with path:{}", workId, prevNodePath);
         return workId;
     }
+
+    private void registerIPPort() throws Exception {
+        InetSocketAddress address = snowflakeServer.getAddress();
+        String hostPort = address.getAddress().getHostAddress() + FIELD_SEP + address.getPort();
+        zkClient.create()
+                .creatingParentContainersIfNeeded()
+                .withMode(CreateMode.EPHEMERAL)
+                .forPath(CLUSTER_PEER + "/" + hostPort);
+    }
+
 }

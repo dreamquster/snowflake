@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by fm.chen on 2017/11/29.
@@ -20,6 +21,12 @@ public class ByteTest {
         byte[] bytes = ByteUtils.longToBytes(cur);
         long res = ByteUtils.bytesToLong(bytes);
         Assert.assertEquals(cur, res);
+    }
+
+    @Test
+    public void timeUnitTest() {
+        long res = TimeUnit.SECONDS.toMillis(3);
+        Assert.assertEquals(3*1000L, res);
     }
 
     @Test

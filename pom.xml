@@ -22,9 +22,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
-		<!-- protobuf paths -->
-		<protobuf.input.directory>${project.basedir}/src/main/protobufs</protobuf.input.directory>
-		<protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
 		<os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
 		<protobuf.version>2.6.1</protobuf.version>
 		<grpc-version>1.8.0</grpc-version>
