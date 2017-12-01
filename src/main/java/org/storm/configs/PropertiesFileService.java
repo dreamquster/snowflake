@@ -30,6 +30,10 @@ public class PropertiesFileService implements InitializingBean {
     }
 
     public void saveSetProperty(String key, Object value) {
+        if (value.equals(props.getProperty(key))) {
+            return;
+        }
+
         props.put(key, String.valueOf(value));
         try {
             props.store(new FileOutputStream(dataDir + CONFIG_FILE), "Snowflake状态配置存储文件");

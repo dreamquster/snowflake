@@ -198,7 +198,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         }
 
         Integer workId = extractWorkId();
-
+        propertiesFileService.saveSetProperty(PREV_NODE_PATH, workId);
         snowflakeServer.start();
     }
 
