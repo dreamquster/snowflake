@@ -22,7 +22,6 @@ public class SnowflakeServer  {
 
 
     public SnowflakeServer() {
-
     }
 
     public void start() throws IOException {

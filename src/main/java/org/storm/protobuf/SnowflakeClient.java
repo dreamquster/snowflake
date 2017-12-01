@@ -1,5 +1,6 @@
 package org.storm.protobuf;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
@@ -18,6 +19,8 @@ public class SnowflakeClient {
 
     private final IdGeneratorServiceGrpc.IdGeneratorServiceBlockingStub idGenBlockStub;
 
+    private final IdGeneratorServiceGrpc.IdGeneratorServiceFutureStub idGenFutureStub;
+
     public SnowflakeClient(String host, int port) {
         this(ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build());
     }
@@ -26,6 +29,7 @@ public class SnowflakeClient {
     private SnowflakeClient(ManagedChannel channel) {
         this.channel = channel;
         idGenBlockStub = IdGeneratorServiceGrpc.newBlockingStub(channel);
+        idGenFutureStub = IdGeneratorServiceGrpc.newFutureStub(channel);
     }
 
     public void shutdown() throws InterruptedException {
@@ -35,5 +39,10 @@ public class SnowflakeClient {
     public SystemTimeResponse getPeerSystemInfo() {
         Empty empty = Empty.getDefaultInstance();
         return idGenBlockStub.getSystemInMillisOther(empty);
+    }
+
+    public ListenableFuture<SystemTimeResponse> asyncPeerSystemInfo() {
+        Empty empty = Empty.getDefaultInstance();
+        return idGenFutureStub.getSystemInMillisOther(empty);
     }
 }
