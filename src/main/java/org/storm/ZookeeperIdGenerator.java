@@ -246,10 +246,16 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
     private void registerIPPort() throws Exception {
         InetSocketAddress address = snowflakeServer.getAddress();
         String hostPort = address.getAddress().getHostAddress() + FIELD_SEP + address.getPort();
-        zkClient.create()
-                .creatingParentContainersIfNeeded()
-                .withMode(CreateMode.EPHEMERAL)
-                .forPath(CLUSTER_PEER + "/" + hostPort);
+        String path = CLUSTER_PEER + "/" + hostPort;
+        Stat stat = zkClient.checkExists().forPath(path);
+        if (stat == null) {
+            zkClient.create()
+                    .creatingParentContainersIfNeeded()
+                    .withMode(CreateMode.EPHEMERAL)
+                    .forPath(path);
+        } else {
+            throw new IllegalStateException(String.format("Exist the namesake node:%s, maybe previous service don't close fully", path));
+        }
     }
 
 }
