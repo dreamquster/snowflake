@@ -4,23 +4,31 @@ import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 /**
  * Created by fm.chen on 2017/11/30.
  */
 @Component
-public class SnowflakeServer  {
+public class SnowflakeServer implements InitializingBean {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Value("${rpc.port ?: 50051}")
     private Integer port = 50051;
+
+    @Value("${rpc.host:#{null}}")
+    private String host;
+
+    private InetSocketAddress socketAddress;
 
     private Server server;
 
@@ -33,7 +41,7 @@ public class SnowflakeServer  {
     }
 
     public void start() throws IOException {
-        server = NettyServerBuilder.forPort(port)
+        server = NettyServerBuilder.forAddress(socketAddress)
                 .addService(new IdGenService())
                 .build().start();
         logger.info("Server started, listening on " + port);
@@ -52,6 +60,15 @@ public class SnowflakeServer  {
     }
 
     public InetSocketAddress getAddress() {
-        return new InetSocketAddress(port);
+        return socketAddress;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        if (StringUtils.isEmpty(host)) {
+            socketAddress = new InetSocketAddress(port);
+        } else {
+            socketAddress = new InetSocketAddress(host, port);
+        }
     }
 }

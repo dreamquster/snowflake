@@ -164,6 +164,11 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
                 }
             }
 
+            if (0 == count) {
+                logger.warn("Only one machine service is running!");
+                return false;
+            }
+
             long avgTime = sum.divide(BigDecimal.valueOf(count)).longValue();
             if ((curTime + THRESHOLD) <= avgTime) { // TimeUnit.MILLISECONDS.
                 return true;
