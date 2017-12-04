@@ -22,8 +22,8 @@ public class SnowflakeServer implements InitializingBean {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Value("${rpc.port ?: 50051}")
-    private Integer port = 50051;
+    @Value("${rpc.port:50051}")
+    private Integer port;
 
     @Value("${rpc.host:#{null}}")
     private String host;

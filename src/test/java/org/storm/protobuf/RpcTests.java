@@ -23,6 +23,7 @@ public class RpcTests {
         snowflakeServer.start();
     }
 
+
     @Test
     public void rpcUsabilityTest() throws UnknownHostException, InterruptedException {
         SnowflakeClient client = new SnowflakeClient(InetAddress.getLocalHost().getHostAddress(), port);

@@ -2,6 +2,7 @@ package org.storm;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.storm.protobuf.SnowflakeClient;
 import org.storm.utils.ByteUtils;
 
 import java.io.BufferedReader;
@@ -9,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,5 +42,12 @@ public class ByteTest {
         while ((inputLine = in.readLine()) != null)
             System.out.println(inputLine);
         in.close();
+    }
+
+
+    @Test
+    public void testAlive() throws UnknownHostException {
+        SnowflakeClient client = new SnowflakeClient(InetAddress.getLocalHost().getHostAddress(), 50010);
+        Long time = client.getPeerSystemInfo().getTime();
     }
 }
