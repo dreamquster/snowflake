@@ -138,6 +138,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
 
     // true: time of this machine is fall behind largely than others in cluster.
     private boolean existTimeTurnBack() {
+        List<SnowflakeClient> clients = new ArrayList<>();
         try {
             Long updateTime =  ByteUtils.bytesToLong(zkClient.getData().forPath(prevNodePath +  LAST_UPDATE_TIME));
             if (updateTime >= System.currentTimeMillis())  {
@@ -150,6 +151,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
             for (String childPath : childPaths) {
                 logger.info("child path:{}", childPath);
                 SnowflakeClient client = getPeerClient(childPath);
+                clients.add(client);
                 responses.add(client.asyncPeerSystemInfo());
             }
             BigDecimal sum = BigDecimal.ZERO;
@@ -176,6 +178,10 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         } catch (Exception e) {
             logger.error(String.format("get last updated time error for %d", workId), e);
             return true;
+        } finally {
+            clients.forEach((e) -> {
+                e.shutdown();
+            });
         }
         return false;
     }

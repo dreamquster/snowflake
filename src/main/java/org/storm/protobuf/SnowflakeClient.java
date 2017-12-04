@@ -35,8 +35,12 @@ public class SnowflakeClient implements Closeable {
         idGenFutureStub = IdGeneratorServiceGrpc.newFutureStub(channel);
     }
 
-    public void shutdown() throws InterruptedException {
-        channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    public void shutdown()  {
+        try {
+            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.error("failed to shutdown!", e);
+        }
     }
 
     public SystemTimeResponse getPeerSystemInfo() {
@@ -51,10 +55,6 @@ public class SnowflakeClient implements Closeable {
 
     @Override
     public void close() throws IOException {
-        try {
-            this.shutdown();
-        } catch (InterruptedException e) {
-            throw new RpcCloseException(e);
-        }
+        this.shutdown();
     }
 }
