@@ -6,6 +6,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ import static java.lang.Math.abs;
  * Created by fm.chen on 2017/11/28.
  */
 @Service
-public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
+public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, DisposableBean {
 
     private static final String PREV_NODE_PATH = "prevNodePath";
 
@@ -244,9 +245,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
     }
 
     private void registerIPPort() throws Exception {
-        InetSocketAddress address = snowflakeServer.getAddress();
-        String hostPort = address.getAddress().getHostAddress() + FIELD_SEP + address.getPort();
-        String path = CLUSTER_PEER + "/" + hostPort;
+        String path = getRpcAddressPath();
         Stat stat = zkClient.checkExists().forPath(path);
         if (stat == null) {
             zkClient.create()
@@ -258,4 +257,17 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean {
         }
     }
 
+    private String getRpcAddressPath() {
+        InetSocketAddress address = snowflakeServer.getAddress();
+        String hostPort = address.getAddress().getHostAddress() + FIELD_SEP + address.getPort();
+        return CLUSTER_PEER + "/" + hostPort;
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        System.err.println("destroy zookeeperIdGenerator");
+        timer.cancel();
+        zkClient.delete().forPath(getRpcAddressPath());
+        snowflakeServer.shutdown();
+    }
 }
