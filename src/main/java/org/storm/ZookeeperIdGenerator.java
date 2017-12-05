@@ -10,6 +10,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.storm.configs.IdGenProperties;
 import org.storm.configs.PropertiesFileService;
 import org.storm.protobuf.SnowflakeClient;
 import org.storm.protobuf.SnowflakeServer;
