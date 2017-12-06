@@ -1,13 +1,5 @@
 package org.storm.core;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.sql.PreparedStatement;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 /**
  * Created by dknight on 2017/12/6.
  */
@@ -30,10 +22,11 @@ public class DBIdGenerator implements IdGenerator {
         if (idRange.getEnd() ==  res) {
             idRange = nextRange;
             currentId = nextRange.getStart();
+            nextRange = null;
             return res;
         }
 
-        if (idRange.exceedMid(res)) {
+        if (null == nextRange && idRange.exceedMid(res)) {
             nextRange = idGeneratorRepo.fetchIdBatch(bizTag);
         }
         currentId++;
