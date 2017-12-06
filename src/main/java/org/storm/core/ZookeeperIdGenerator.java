@@ -63,7 +63,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
 
     @Override
     public Long nextId() {
-        return snowflakeId(workId, seqGen.getAndIncrement());
+        return snowflakeId(workId, seqGen.getAndIncrement() & UPPER_BOUND);
     }
 
 
