@@ -1,4 +1,4 @@
-package org.storm;
+package org.storm.core;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.curator.framework.CuratorFramework;
@@ -8,9 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.storm.configs.IdGenProperties;
 import org.storm.configs.PropertiesFileService;
 import org.storm.protobuf.SnowflakeClient;
 import org.storm.protobuf.SnowflakeServer;
@@ -33,7 +30,6 @@ import static java.lang.Math.abs;
 /**
  * Created by fm.chen on 2017/11/28.
  */
-@Service
 public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, DisposableBean {
 
     private static final String PREV_NODE_PATH = "prevNodePath";
@@ -42,13 +38,10 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
     private CuratorFramework zkClient;
 
-    @Autowired
     private PropertiesFileService propertiesFileService;
 
-    @Autowired
     private SnowflakeServer snowflakeServer;
 
     private String prevNodePath;
@@ -67,6 +60,11 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
         this.seqGen = seqGen;
     }
 
+    public ZookeeperIdGenerator(CuratorFramework zkClient, PropertiesFileService propertiesFileService, SnowflakeServer snowflakeServer) {
+        this.zkClient = zkClient;
+        this.propertiesFileService = propertiesFileService;
+        this.snowflakeServer = snowflakeServer;
+    }
 
     @Override
     public Long nextId() {

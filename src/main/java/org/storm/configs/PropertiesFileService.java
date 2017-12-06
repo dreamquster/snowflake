@@ -18,12 +18,15 @@ public class PropertiesFileService implements InitializingBean {
 
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Value("${data-dir}")
     private String dataDir;
 
     private static final String CONFIG_FILE = "conf.properties";
 
     private Properties props = new Properties();
+
+    public PropertiesFileService(String dataDir) {
+        this.dataDir = dataDir;
+    }
 
     public String getProperty(String key) {
         return props.getProperty(key);

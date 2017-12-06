@@ -17,7 +17,6 @@ import java.net.SocketAddress;
 /**
  * Created by fm.chen on 2017/11/30.
  */
-@Component
 public class SnowflakeServer implements InitializingBean {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -37,6 +36,11 @@ public class SnowflakeServer implements InitializingBean {
     }
 
     public SnowflakeServer(Integer port) {
+        this.port = port;
+    }
+
+    public SnowflakeServer(String host, Integer port) {
+        this.host = host;
         this.port = port;
     }
 
