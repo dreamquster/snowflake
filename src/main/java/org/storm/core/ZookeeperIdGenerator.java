@@ -2,6 +2,8 @@ package org.storm.core;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -25,12 +27,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.lang.Math.abs;
-
 /**
  * Created by fm.chen on 2017/11/28.
  */
-public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, DisposableBean {
+public class ZookeeperIdGenerator implements IdGenerator,
+        InitializingBean, DisposableBean {
 
     private static final String PREV_NODE_PATH = "prevNodePath";
 
@@ -146,7 +147,7 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
             String selfPath = getRpcAddressPath();
             for (String childPath : childPaths) {
                 logger.info("child path:{}", childPath);
-                if (!selfPath.equals(childPath)) {
+                if (!selfPath.endsWith(childPath)) {
                     SnowflakeClient client = getPeerClient(childPath);
                     clients.add(client);
                     responses.add(client.asyncPeerSystemInfo());
@@ -244,12 +245,27 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
     private void registerIPPort() throws Exception {
         String path = getRpcAddressPath();
         Stat stat = zkClient.checkExists().forPath(path);
+
         if (stat == null) {
             zkClient.create()
                     .creatingParentContainersIfNeeded()
                     .withMode(CreateMode.EPHEMERAL)
                     .forPath(path);
         }
+        PathChildrenCache nodeWatcher = new PathChildrenCache(zkClient, path, false);
+        nodeWatcher.getListenable().addListener((client, event) -> {
+            ChildData data = event.getData();
+            if (data == null) {
+                logger.debug("No data in event[" + event + "]");
+            } else {
+                logger.debug("Receive event: "
+                        + "type=[" + event.getType() + "]"
+                        + ", path=[" + data.getPath() + "]"
+                        + ", data=[" + new String(data.getData()) + "]"
+                        + ", stat=[" + data.getStat() + "]");
+            }
+        });
+        nodeWatcher.start(PathChildrenCache.StartMode.NORMAL);
     }
 
     private String getRpcAddressPath() {
@@ -265,4 +281,5 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
         zkClient.delete().forPath(getRpcAddressPath());
         snowflakeServer.shutdown();
     }
+
 }
