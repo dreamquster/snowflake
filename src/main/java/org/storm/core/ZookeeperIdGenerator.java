@@ -48,16 +48,11 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
 
     private Integer workId;
 
-    private AtomicInteger seqGen;
+    private AtomicInteger seqGen = new AtomicInteger(0);
 
     private Timer timer = new Timer();
 
     public ZookeeperIdGenerator() {
-    }
-
-    public ZookeeperIdGenerator(Integer workId, AtomicInteger seqGen) {
-        this.workId = workId;
-        this.seqGen = seqGen;
     }
 
     public ZookeeperIdGenerator(CuratorFramework zkClient, PropertiesFileService propertiesFileService, SnowflakeServer snowflakeServer) {
@@ -148,14 +143,17 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
             List<String> childPaths = zkClient.getChildren().forPath(CLUSTER_PEER);
             List<ListenableFuture<SystemTimeResponse>> responses = new ArrayList<>(childPaths.size());
             long curTime = System.currentTimeMillis();
+            String selfPath = getRpcAddressPath();
             for (String childPath : childPaths) {
                 logger.info("child path:{}", childPath);
-                SnowflakeClient client = getPeerClient(childPath);
-                clients.add(client);
-                responses.add(client.asyncPeerSystemInfo());
+                if (!selfPath.equals(childPath)) {
+                    SnowflakeClient client = getPeerClient(childPath);
+                    clients.add(client);
+                    responses.add(client.asyncPeerSystemInfo());
+                }
             }
             BigDecimal sum = BigDecimal.ZERO;
-            int count = 0;
+            Integer count = 0;
             for (int i = 0; i < responses.size(); ++i) {
                 ListenableFuture<SystemTimeResponse> response = responses.get(i);
                 try {
@@ -251,8 +249,6 @@ public class ZookeeperIdGenerator implements IdGenerator, InitializingBean, Disp
                     .creatingParentContainersIfNeeded()
                     .withMode(CreateMode.EPHEMERAL)
                     .forPath(path);
-        } else {
-            throw new IllegalStateException(String.format("Exist the namesake node:%s, maybe previous service don't close fully", path));
         }
     }
 

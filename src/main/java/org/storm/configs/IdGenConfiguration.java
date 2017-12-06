@@ -33,7 +33,6 @@ public class IdGenConfiguration {
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
         CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(idGenProperties.getZookeeperUrl())
-                .connectionTimeoutMs(5000)
                 .retryPolicy(retryPolicy)
                 .namespace(idGenProperties.getBaseUrl())
                 .build();
