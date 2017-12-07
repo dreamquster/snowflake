@@ -1,9 +1,11 @@
 package org.storm.core;
 
+import org.springframework.beans.factory.InitializingBean;
+
 /**
  * Created by dknight on 2017/12/6.
  */
-public class DBIdGenerator implements IdGenerator {
+public class DBIdGenerator implements IdGenerator, InitializingBean {
 
 
     private IdRange idRange;
@@ -15,6 +17,11 @@ public class DBIdGenerator implements IdGenerator {
     private IdGeneratorRepo idGeneratorRepo;
 
     private String bizTag;
+
+    public DBIdGenerator(IdGeneratorRepo idGeneratorRepo, String bizTag) {
+        this.idGeneratorRepo = idGeneratorRepo;
+        this.bizTag = bizTag;
+    }
 
     @Override
     public synchronized Long nextId() {
@@ -34,7 +41,9 @@ public class DBIdGenerator implements IdGenerator {
     }
 
 
-
-
-
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        idRange = idGeneratorRepo.fetchIdBatch(bizTag);
+        currentId = idRange.getStart();
+    }
 }

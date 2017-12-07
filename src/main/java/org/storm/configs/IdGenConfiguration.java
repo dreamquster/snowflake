@@ -10,6 +10,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.storm.core.DBIdGenerator;
+import org.storm.core.IdGeneratorRepo;
 import org.storm.core.ZookeeperIdGenerator;
 import org.storm.protobuf.SnowflakeServer;
 
@@ -26,6 +29,18 @@ public class IdGenConfiguration {
     @Autowired
     private IdGenProperties idGenProperties;
 
+    @Bean
+    @ConditionalOnClass(JdbcTemplate.class)
+    @ConditionalOnMissingBean(IdGeneratorRepo.class)
+    public IdGeneratorRepo idGeneratorRepo(JdbcTemplate jdbcTemplate) {
+        return new IdGeneratorRepo(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(DBIdGenerator.class)
+    public DBIdGenerator dbIdGenerator(IdGeneratorRepo idGeneratorRepo) {
+        return new DBIdGenerator(idGeneratorRepo, idGenProperties.getBizTag());
+    }
 
     @Bean
     @ConditionalOnMissingBean(CuratorFramework.class)

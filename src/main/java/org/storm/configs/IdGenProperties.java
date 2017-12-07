@@ -18,6 +18,8 @@ public class IdGenProperties {
 
     private String dataDir = "/data/snowflake/";
 
+    private String bizTag = "snowflake";
+
     public String getBaseUrl() {
         return baseUrl;
     }
@@ -56,5 +58,13 @@ public class IdGenProperties {
 
     public void setZookeeperUrl(String zookeeperUrl) {
         this.zookeeperUrl = zookeeperUrl;
+    }
+
+    public String getBizTag() {
+        return bizTag;
+    }
+
+    public void setBizTag(String bizTag) {
+        this.bizTag = bizTag;
     }
 }

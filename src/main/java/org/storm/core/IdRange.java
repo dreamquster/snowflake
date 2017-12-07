@@ -41,7 +41,7 @@ public class IdRange {
     }
 
     public boolean exceedMid(Long v) {
-        return (v - start) <= (step / 2);
+        return (v - start) >= (step / 2);
     }
 
 
