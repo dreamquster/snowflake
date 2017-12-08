@@ -2,6 +2,7 @@ package org.storm.core;
 
 /**
  * Created by dknight on 2017/12/6.
+ * [start, end)
  */
 public class IdRange {
     private Long start;

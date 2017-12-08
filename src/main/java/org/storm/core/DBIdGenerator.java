@@ -8,7 +8,7 @@ import org.springframework.beans.factory.InitializingBean;
 public class DBIdGenerator implements IdGenerator, InitializingBean {
 
 
-    private IdRange idRange;
+    private IdRange idRange; // [start, end)
 
     private IdRange nextRange;
 
@@ -25,19 +25,16 @@ public class DBIdGenerator implements IdGenerator, InitializingBean {
 
     @Override
     public synchronized Long nextId() {
-        Long res = currentId;
-        if (idRange.getEnd() ==  res) {
+        if (idRange.getEnd().equals(currentId)) {
             idRange = nextRange;
             currentId = nextRange.getStart();
             nextRange = null;
-            return res;
         }
 
-        if (null == nextRange && idRange.exceedMid(res)) {
+        if (null == nextRange && idRange.exceedMid(currentId)) {
             nextRange = idGeneratorRepo.fetchIdBatch(bizTag);
         }
-        currentId++;
-        return res;
+        return currentId++;
     }
 
 
