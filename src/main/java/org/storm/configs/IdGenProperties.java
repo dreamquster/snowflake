@@ -2,6 +2,10 @@ package org.storm.configs;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 /**
  * Created by fm.chen on 2017/12/5.
  */
@@ -19,6 +23,10 @@ public class IdGenProperties {
     private String dataDir = "/data/snowflake/";
 
     private String bizTag = "snowflake";
+
+    private String baseDate = "2017-12-12 00:00:00";
+
+    private Long baseDateTime = 0L;
 
     public String getBaseUrl() {
         return baseUrl;
@@ -66,5 +74,19 @@ public class IdGenProperties {
 
     public void setBizTag(String bizTag) {
         this.bizTag = bizTag;
+    }
+
+    public String getBaseDate() {
+        return baseDate;
+    }
+
+    public void setBaseDate(String baseDate) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        baseDateTime = sdf.parse(baseDate).getTime();
+        this.baseDate = baseDate;
+    }
+
+    public Long getBaseDateTime() {
+        return baseDateTime;
     }
 }

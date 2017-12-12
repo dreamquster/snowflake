@@ -5,11 +5,28 @@ import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.support.StaticApplicationContext;
+import org.storm.configs.PropertiesFileService;
+import org.storm.core.DBIdGenerator;
+import org.storm.core.ZookeeperIdGenerator;
+import org.storm.protobuf.SnowflakeServer;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.apache.zookeeper.Watcher.Event.EventType.NodeDeleted;
 import static org.apache.zookeeper.Watcher.Event.EventType.None;
@@ -21,18 +38,158 @@ public class ZookeeperTest {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Test
-    public void ephemeralNodeReconnectTest() {
-        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-        CuratorFramework client = CuratorFrameworkFactory.builder()
-                .connectString("192.168.20.148:2181")
-                .retryPolicy(retryPolicy)
-                .namespace("storm")
-                .build();
+    private final Integer zkPort = 2181;
 
+    private final Integer basePort = 50050;
+
+    private TestingServer zookeeperServer;
+
+    @Before
+    public void setUp() throws Exception {
+        zookeeperServer = new TestingServer(zkPort);
+        zookeeperServer.start();
     }
 
+    @After
+    public void setDown() throws IOException {
+        zookeeperServer.close();
+    }
 
+    public class ZkIdGenThread extends Thread {
+
+        private Integer rpcPort;
+
+        private String dataDir;
+
+        private Integer idsPerThread;
+
+        private Boolean hasConflicted = false;
+
+        private Set<Long> generatedIdSet;
+
+        private Date baseDate;
+
+        public ZkIdGenThread(Integer idsPerThread, Set<Long> generatedIdSet) {
+            this.generatedIdSet = generatedIdSet;
+            this.idsPerThread = idsPerThread;
+        }
+
+        public Integer getRpcPort() {
+            return rpcPort;
+        }
+
+        public void setRpcPort(Integer rpcPort) {
+            this.rpcPort = rpcPort;
+        }
+
+        public String getDataDir() {
+            return dataDir;
+        }
+
+        public void setDataDir(String dataDir) {
+            this.dataDir = dataDir;
+        }
+
+        public Boolean getHasConflicted() {
+            return hasConflicted;
+        }
+
+        public void setHasConflicted(Boolean hasConflicted) {
+            this.hasConflicted = hasConflicted;
+        }
+
+        public Date getBaseDate() {
+            return baseDate;
+        }
+
+        public void setBaseDate(Date baseDate) {
+            this.baseDate = baseDate;
+        }
+
+        private ZookeeperIdGenerator zookeeperIdGenerator() throws Exception {
+            SnowflakeServer snowflakeServer = new SnowflakeServer(rpcPort);
+            PropertiesFileService propertiesFileService = new PropertiesFileService(dataDir);
+            RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+            CuratorFramework client = CuratorFrameworkFactory.builder()
+                    .connectString("localhost:2181")
+                    .retryPolicy(retryPolicy)
+                    .namespace("storm")
+                    .build();
+            client.start();
+            ZookeeperIdGenerator zookeeperIdGenerator = new ZookeeperIdGenerator(client, propertiesFileService, snowflakeServer);
+            zookeeperIdGenerator.setBaseDateTime(baseDate.getTime());
+            zookeeperIdGenerator.afterPropertiesSet();
+            return zookeeperIdGenerator;
+        }
+
+        private String printDateWorkIdSeqOf(Long v) {
+            Integer mask = 0x3F;
+            StringBuilder builder = new StringBuilder();
+            builder.append( "Seq:" + String.valueOf(v & mask));
+            v = v >> 10;
+            builder.append( " workId:" + String.valueOf(v & mask));
+            v = v >> 10;
+            builder.append(" time:" + String.valueOf(v) + "\n");
+            return builder.toString();
+        }
+
+        @Override
+        public void run() {
+            ZookeeperIdGenerator idGenerator = null;
+            int j = 0;
+            try {
+                idGenerator = zookeeperIdGenerator();
+                for (; j < idsPerThread; ++j) {
+                    Long v = idGenerator.nextId();
+                    //logger.debug("generate id: " + printDateWorkIdSeqOf(v));
+                    synchronized(generatedIdSet) {
+                        if (generatedIdSet.contains(v)) {
+                            hasConflicted = true;
+                            logger.error("conflict range with {}", v);
+                            return;
+                        }
+                        generatedIdSet.add(v);
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("", e);
+            } finally {
+                logger.info("thread finished at {}", j);
+            }
+        }
+    }
+
+    @Test
+    public void multiThreadIdTest() throws Exception {
+        int threadNum = 2;
+        int idsPerThread = 100;
+        Set<Long> generatedIdSet = Collections.synchronizedSet(new HashSet<>());
+        List<Thread> threads = new ArrayList<>(threadNum);
+        Date date = new Date();
+        for (int i = 0; i < threadNum; ++i) {
+            ZkIdGenThread thread = new ZkIdGenThread(idsPerThread, generatedIdSet);
+            thread.setDataDir("./snowflake/zk-data-" + i + "/");
+            thread.setRpcPort(basePort + i);
+            thread.setBaseDate(date);
+            threads.add(thread);
+        }
+
+        threads.forEach(e -> e.start());
+
+        threads.forEach(e -> {
+            try {
+                e.join();
+            } catch (InterruptedException ex) {
+                logger.error("", ex);
+            }
+        });
+        Assert.assertEquals(generatedIdSet.size(), threadNum*idsPerThread);
+        for (Thread t: threads) {
+            ZkIdGenThread zkIdGenThread = (ZkIdGenThread)t;
+            Assert.assertFalse(zkIdGenThread.hasConflicted);
+        }
+
+    }
 
     public  class ZNodeWatcher implements Watcher {
         @Override

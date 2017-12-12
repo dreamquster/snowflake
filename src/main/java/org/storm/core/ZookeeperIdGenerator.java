@@ -51,6 +51,8 @@ public class ZookeeperIdGenerator implements IdGenerator,
 
     private AtomicInteger seqGen = new AtomicInteger(0);
 
+    private Long baseDateTime = 0L;
+
     private Timer timer = new Timer();
 
     public ZookeeperIdGenerator() {
@@ -64,7 +66,7 @@ public class ZookeeperIdGenerator implements IdGenerator,
 
     @Override
     public Long nextId() {
-        return snowflakeId(workId, seqGen.getAndIncrement() & UPPER_BOUND);
+        return snowflakeId(workId, seqGen.getAndIncrement() & SEQ_UPPER_BOUND);
     }
 
 
@@ -85,21 +87,23 @@ public class ZookeeperIdGenerator implements IdGenerator,
         this.seqGen = seqGen;
     }
 
-    private static final Integer UPPER_BOUND = 0x3F; //11 1111 1111
+    private static final Integer SEQ_BITS = 12;
 
-    private static final Integer WORK_BITS = 10;
+    private static final Integer SEQ_UPPER_BOUND = (1<< SEQ_BITS) - 1; //all one
 
-    private static final Integer WORK_SEQ_BITS = WORK_BITS + 10;
+    private static final Integer WORK_SEQ_BITS = SEQ_BITS + 10;
+
+    private static final Integer WORK_BOUND = (1<<(WORK_SEQ_BITS - SEQ_BITS)) - 1;
 
     private static final Integer EXPIRE_SECONDS = 5;
 
     public Long snowflakeId(Integer workId, Integer seq) {
-        if (UPPER_BOUND < workId || UPPER_BOUND < seq) {
-            throw new IllegalArgumentException(String.format("workId or seq exceed the upper limit:%d", UPPER_BOUND));
+        if (WORK_BOUND < workId) {
+            throw new IllegalArgumentException(String.format("workId exceed the upper limit:%d", WORK_BOUND));
         }
-        Long stamp = System.currentTimeMillis();
+        Long stamp = System.currentTimeMillis() - baseDateTime;
         stamp = stamp<<WORK_SEQ_BITS; //
-        workId = workId<<WORK_BITS;
+        workId = workId<< SEQ_BITS;
         stamp = stamp | workId | seq;
         return stamp;
     }
@@ -282,4 +286,11 @@ public class ZookeeperIdGenerator implements IdGenerator,
         snowflakeServer.shutdown();
     }
 
+    public Long getBaseDateTime() {
+        return baseDateTime;
+    }
+
+    public void setBaseDateTime(Long baseDateTime) {
+        this.baseDateTime = baseDateTime;
+    }
 }
