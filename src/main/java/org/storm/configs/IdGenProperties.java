@@ -1,6 +1,7 @@
 package org.storm.configs;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -27,6 +28,10 @@ public class IdGenProperties {
     private String baseDate = "2017-12-12 00:00:00";
 
     private Long baseDateTime = 0L;
+
+    public IdGenProperties() {
+        System.out.print("constructor");
+    }
 
     public String getBaseUrl() {
         return baseUrl;
