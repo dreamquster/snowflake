@@ -87,13 +87,13 @@ public class ZookeeperIdGenerator implements IdGenerator,
         this.seqGen = seqGen;
     }
 
-    private static final Integer SEQ_BITS = 12;
+    public static final Integer SEQ_BITS = 12;
 
-    private static final Integer SEQ_UPPER_BOUND = (1<< SEQ_BITS) - 1; //all one
+    public static final Integer SEQ_UPPER_BOUND = (1<< SEQ_BITS) - 1; //all one
 
-    private static final Integer WORK_SEQ_BITS = SEQ_BITS + 10;
+    public static final Integer WORK_SEQ_BITS = SEQ_BITS + 10;
 
-    private static final Integer WORK_BOUND = (1<<(WORK_SEQ_BITS - SEQ_BITS)) - 1;
+    public static final Integer WORK_BOUND = (1<<(WORK_SEQ_BITS - SEQ_BITS)) - 1;
 
     private static final Integer EXPIRE_SECONDS = 5;
 

@@ -123,12 +123,13 @@ public class ZookeeperTest {
         }
 
         private String printDateWorkIdSeqOf(Long v) {
-            Integer mask = 0x3F;
+            Integer mask = ZookeeperIdGenerator.SEQ_UPPER_BOUND;
             StringBuilder builder = new StringBuilder();
             builder.append( "Seq:" + String.valueOf(v & mask));
-            v = v >> 10;
+            v = v >> ZookeeperIdGenerator.SEQ_BITS;
+            mask = ZookeeperIdGenerator.WORK_BOUND;
             builder.append( " workId:" + String.valueOf(v & mask));
-            v = v >> 10;
+            v = v >> (ZookeeperIdGenerator.WORK_SEQ_BITS - ZookeeperIdGenerator.SEQ_BITS);
             builder.append(" time:" + String.valueOf(v) + "\n");
             return builder.toString();
         }
@@ -141,10 +142,13 @@ public class ZookeeperTest {
                 idGenerator = zookeeperIdGenerator();
                 for (; j < idsPerThread; ++j) {
                     Long v = idGenerator.nextId();
-                    //logger.debug("generate id: " + printDateWorkIdSeqOf(v));
                     synchronized(generatedIdSet) {
                         if (generatedIdSet.contains(v)) {
                             hasConflicted = true;
+                            logger.debug("generate id: " + printDateWorkIdSeqOf(v));
+                            for (Long lv : generatedIdSet) {
+                                logger.debug("generatedIdSet id: " + printDateWorkIdSeqOf(lv));
+                            }
                             logger.error("conflict range with {}", v);
                             return;
                         }
@@ -161,8 +165,8 @@ public class ZookeeperTest {
 
     @Test
     public void multiThreadIdTest() throws Exception {
-        int threadNum = 2;
-        int idsPerThread = 100;
+        int threadNum = 10;
+        int idsPerThread = 100000;
         Set<Long> generatedIdSet = Collections.synchronizedSet(new HashSet<>());
         List<Thread> threads = new ArrayList<>(threadNum);
         Date date = new Date();
@@ -184,11 +188,6 @@ public class ZookeeperTest {
             }
         });
         Assert.assertEquals(generatedIdSet.size(), threadNum*idsPerThread);
-        for (Thread t: threads) {
-            ZkIdGenThread zkIdGenThread = (ZkIdGenThread)t;
-            Assert.assertFalse(zkIdGenThread.hasConflicted);
-        }
-
     }
 
     public  class ZNodeWatcher implements Watcher {
