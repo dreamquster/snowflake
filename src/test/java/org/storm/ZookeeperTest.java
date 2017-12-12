@@ -164,7 +164,7 @@ public class ZookeeperTest {
     }
 
     @Test
-    public void multiThreadIdTest() throws Exception {
+    public void multiInstanceIdTest() throws Exception {
         int threadNum = 10;
         int idsPerThread = 100000;
         Set<Long> generatedIdSet = Collections.synchronizedSet(new HashSet<>());
@@ -188,32 +188,5 @@ public class ZookeeperTest {
             }
         });
         Assert.assertEquals(generatedIdSet.size(), threadNum*idsPerThread);
-    }
-
-    public  class ZNodeWatcher implements Watcher {
-        @Override
-        public void process(WatchedEvent event) {
-            Event.EventType eventType = event.getType();
-            Event.KeeperState keeperState =  event.getState();
-            String path = event.getPath();
-            switch(event.getType()) {
-                case None:
-                    //connection Error：会自动重连
-                    logger.info("[Watcher],Connecting...");
-                    if(keeperState == Event.KeeperState.SyncConnected){
-                        logger.info("[Watcher],Connected...");
-                        //检测临时节点是否失效等。
-                    }
-                    break;
-                case NodeCreated:
-                    logger.info("[Watcher],NodeCreated:" + path);
-                    break;
-                case NodeDeleted:
-                    logger.info("[Watcher],NodeDeleted:" + path);
-                    break;
-                default:
-                    //
-            }
-        }
     }
 }

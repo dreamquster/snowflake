@@ -47,6 +47,7 @@ public class IdGenConfiguration {
     }
 
     @Bean
+    @ConditionalOnClass(value = {IdGeneratorRepo.class, IdGenProperties.class})
     @ConditionalOnMissingBean(DBIdGenerator.class)
     public DBIdGenerator dbIdGenerator(IdGeneratorRepo idGeneratorRepo) {
         return new DBIdGenerator(idGeneratorRepo, idGenProperties.getBizTag());

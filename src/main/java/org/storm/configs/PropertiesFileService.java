@@ -15,7 +15,6 @@ import java.util.Properties;
 /**
  * Created by fm.chen on 2017/11/30.
  */
-@Service
 public class PropertiesFileService  {
 
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(this.getClass());
