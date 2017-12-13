@@ -41,14 +41,12 @@ public class IdGenConfiguration {
 
     @Bean
     @ConditionalOnClass(JdbcTemplate.class)
-    @ConditionalOnMissingBean(IdGeneratorRepo.class)
     public IdGeneratorRepo idGeneratorRepo(JdbcTemplate jdbcTemplate) {
         return new IdGeneratorRepo(jdbcTemplate);
     }
 
     @Bean
     @ConditionalOnClass(value = {IdGeneratorRepo.class, IdGenProperties.class})
-    @ConditionalOnMissingBean(DBIdGenerator.class)
     public DBIdGenerator dbIdGenerator(IdGeneratorRepo idGeneratorRepo) {
         return new DBIdGenerator(idGeneratorRepo, idGenProperties.getBizTag());
     }
