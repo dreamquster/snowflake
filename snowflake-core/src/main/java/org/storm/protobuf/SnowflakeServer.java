@@ -21,10 +21,8 @@ public class SnowflakeServer  {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Value("${rpc.port:50051}")
     private Integer port;
 
-    @Value("${rpc.host:#{null}}")
     private String host;
 
     private InetSocketAddress socketAddress;
