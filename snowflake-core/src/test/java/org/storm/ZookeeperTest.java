@@ -20,6 +20,7 @@ import org.storm.core.DBIdGenerator;
 import org.storm.core.ZookeeperIdGenerator;
 import org.storm.protobuf.SnowflakeServer;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -163,6 +164,34 @@ public class ZookeeperTest {
         }
     }
 
+    public static boolean delete(File file) {
+
+        File[] flist = null;
+
+        if(file == null){
+            return false;
+        }
+
+        if (file.isFile()) {
+            return file.delete();
+        }
+
+        if (!file.isDirectory()) {
+            return false;
+        }
+
+        flist = file.listFiles();
+        if (flist != null && flist.length > 0) {
+            for (File f : flist) {
+                if (!delete(f)) {
+                    return false;
+                }
+            }
+        }
+
+        return file.delete();
+    }
+
     @Test
     public void multiInstanceIdTest() throws Exception {
         int threadNum = 10;
@@ -187,6 +216,7 @@ public class ZookeeperTest {
                 logger.error("", ex);
             }
         });
+        delete(new File("./snowflake"));
         Assert.assertEquals(generatedIdSet.size(), threadNum*idsPerThread);
     }
 }
