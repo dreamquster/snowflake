@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.storm.core.IdGenerator;
@@ -28,7 +29,7 @@ import java.util.Set;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest
-@TestPropertySource("classpath:application.properties")
+@PropertySource("classpath:/application.properties")
 public class ZookeeperIdGenSpringTest {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
