@@ -87,11 +87,11 @@ public class ZookeeperIdGenerator implements IdGenerator,
         this.seqGen = seqGen;
     }
 
-    public static final Integer SEQ_BITS = 12;
+    public static final Integer SEQ_BITS = 14;
 
     public static final Integer SEQ_UPPER_BOUND = (1<< SEQ_BITS) - 1; //all one
 
-    public static final Integer WORK_SEQ_BITS = SEQ_BITS + 10;
+    public static final Integer WORK_SEQ_BITS = SEQ_BITS + 6;
 
     public static final Integer WORK_BOUND = (1<<(WORK_SEQ_BITS - SEQ_BITS)) - 1;
 
@@ -282,7 +282,7 @@ public class ZookeeperIdGenerator implements IdGenerator,
     public void destroy() throws Exception {
         System.err.println("destroy zookeeperIdGenerator");
         timer.cancel();
-        zkClient.delete().forPath(getRpcAddressPath());
+        zkClient.close();
         snowflakeServer.shutdown();
     }
 

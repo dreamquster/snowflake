@@ -30,6 +30,8 @@ public class IdGenProperties {
 
     private Long baseDateTime = 0L;
 
+    private String useBackend = "Zookeeper";
+
     public String getBaseUrl() {
         return baseUrl;
     }
@@ -83,12 +85,31 @@ public class IdGenProperties {
     }
 
     public void setBaseDate(String baseDate) throws ParseException {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-        baseDateTime = sdf.parse(baseDate).getTime();
+        genBaseDateTime(baseDate);
         this.baseDate = baseDate;
     }
 
-    public Long getBaseDateTime() {
+    private Long genBaseDateTime(String baseDate) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        baseDateTime = sdf.parse(baseDate).getTime();
         return baseDateTime;
+    }
+
+
+    public Long getBaseDateTime() throws ParseException {
+        return genBaseDateTime(baseDate);
+    }
+
+//    public void setBaseDateTime(Long baseDateTime) {
+//        this.baseDateTime = baseDateTime;
+//    }
+
+
+    public String getUseBackend() {
+        return useBackend;
+    }
+
+    public void setUseBackend(String useBackend) {
+        this.useBackend = useBackend;
     }
 }

@@ -5,10 +5,14 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ConversionServiceFactoryBean;
@@ -39,6 +43,9 @@ public class IdGenConfiguration {
     @Autowired
     private IdGenProperties idGenProperties;
 
+    public IdGenConfiguration() {
+    }
+
     @Bean
     @ConditionalOnClass(JdbcTemplate.class)
     public IdGeneratorRepo idGeneratorRepo(JdbcTemplate jdbcTemplate) {
@@ -47,32 +54,13 @@ public class IdGenConfiguration {
 
     @Bean
     @ConditionalOnClass(value = {IdGeneratorRepo.class, IdGenProperties.class})
+    @ConditionalOnProperty(name="snowflake.backend", havingValue="DB")
     public DBIdGenerator dbIdGenerator(IdGeneratorRepo idGeneratorRepo) {
         return new DBIdGenerator(idGeneratorRepo, idGenProperties.getBizTag());
     }
 
 
-    @Bean(name = "conversionService")
-    public ConversionServiceFactoryBean getConversionService() {
-        ConversionServiceFactoryBean bean = new ConversionServiceFactoryBean();
-        Set<Converter> converters = new HashSet<>();
-        converters.add(new StringToDateConverter());
-        bean.setConverters(converters);
-        return bean;
-    }
 
-    public static class StringToDateConverter implements Converter<String, Date> {
-        public Date convert(String source) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            try {
-                return sdf.parse(source);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-    }
 
     @Bean
     @ConditionalOnMissingBean(CuratorFramework.class)
@@ -109,10 +97,9 @@ public class IdGenConfiguration {
     @ConditionalOnMissingBean(ZookeeperIdGenerator.class)
     public ZookeeperIdGenerator zookeeperIdGenerator(CuratorFramework zkClient,
                                                      PropertiesFileService propertiesFileService,
-                                                     SnowflakeServer snowflakeServer) {
+                                                     SnowflakeServer snowflakeServer) throws ParseException {
         ZookeeperIdGenerator zookeeperIdGenerator = new ZookeeperIdGenerator(zkClient, propertiesFileService, snowflakeServer);
         zookeeperIdGenerator.setBaseDateTime(idGenProperties.getBaseDateTime());
         return zookeeperIdGenerator;
     }
-
 }
